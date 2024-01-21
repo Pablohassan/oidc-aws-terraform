@@ -52,17 +52,21 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color
+        run: |
+          terraform plan -no-color | tee plan-output.tx
         if: github.event_name == 'pull_request'
         continue-on-error: true
 
       - uses: actions/github-script@v6
         if: github.event_name == 'pull_request'
-        env:
-          PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+        # env:
+        #   PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const fs = require('fs');
+            const planOutput = fs.existsSync('plan-output.txt') ? fs.readFileSync('plan-output.txt', 'utf8') : 'No plan output.';
+
             const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
@@ -73,6 +77,7 @@ jobs:
             \`\`\`
 
             </details>
+
 
             #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
 
